@@ -11,12 +11,12 @@
         <% if (username) { %>
         <div>Logged in as: <%= username %></div>
         <form method="POST" action="/logout" >
-          <button type="submit" class="btn btn-outline-primary">Logout</button>
+          <button type="submit" class="btn btn-outline-dark">Logout</button>
           </form>
         <% } else { %>
         <form method="POST" action="/login" >
           <input type="text" name="username">
-          <button type="submit" class="btn btn-outline-primary">Login</button>
+          <button type="submit" class="btn btn-outline-dark">Login</button>
         </form>
         <% } %>
       </div>

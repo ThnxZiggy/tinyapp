@@ -110,9 +110,8 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
   console.log(req.body)
-
-res.cookie("username", req.body.username)
-res.redirect('/urls')
+  res.cookie("username", req.body.username)
+  res.redirect('/urls')
 })
 
 app.post("/logout", (req, res) => {
@@ -120,6 +119,9 @@ app.post("/logout", (req, res) => {
   res.redirect('/urls')
 })
 
+app.get("/register", (req, res) => {
+  res.render("registrationPage");
+});
 
 
 
