@@ -3,27 +3,40 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require('body-parser');
 const { response } = require('express');
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 const cookieParser = require('cookie-parser')
 app.use(cookieParser());
 
 
-const generateRandomString = function(n) {
-  let randomString           = '';
-  let characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+const generateRandomString = function (n) {
+  let randomString = '';
+  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  for ( let i = 0; i < n; i++ ) {
-    randomString += characters.charAt(Math.floor(Math.random()*characters.length));
- }
- return randomString;
+  for (let i = 0; i < n; i++) {
+    randomString += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return randomString;
+}
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
 }
 
 
-app.set ('view engine', 'ejs')
+app.set('view engine', 'ejs')
 
 const urlDatabase = {
   'b2xBn2': 'http://www.lighthouselabs.ca',
-  '9sm5xK' : 'http://www.google.com'
+  '9sm5xK': 'http://www.google.com'
 };
 
 
@@ -44,8 +57,10 @@ app.get('/hello', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
-  const templateVars = { urls: urlDatabase,
-    username: req.cookies['username'] };
+  const templateVars = {
+    urls: urlDatabase,
+    username: req.cookies['username']
+  };
   res.render('urls_index', templateVars);
 });
 
@@ -54,9 +69,11 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, 
+  const templateVars = {
+    shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies['username'] };
+    username: req.cookies['username']
+  };
   res.render("urls_show", templateVars);
 })
 
@@ -82,15 +99,15 @@ app.get('/u/:shortURL', (req, res) => {
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
- const deleteURL = req.params.shortURL 
- console.log(urlDatabase[deleteURL])
+  const deleteURL = req.params.shortURL
+  console.log(urlDatabase[deleteURL])
   delete urlDatabase[deleteURL]
   res.redirect("/urls")
 })
 
 app.get("/urls/:shortURL", (req, res) => {
   const shortURLID = req.params.shortURL
-  
+
   res.redirect(`/urls/${shortURLID}`)
 })
 
@@ -123,7 +140,15 @@ app.get("/register", (req, res) => {
   res.render("registrationPage");
 });
 
-
+app.post('/register', (req, res) => {
+  const id = generateRandomString(8);
+  const email = req.body.email
+  const password = req.body.password
+  users[id] = {id, email, password}
+  res.cookie("user_id", users[id].id)
+  res.redirect('/urls')
+  console.log(users);
+})
 
 
 
