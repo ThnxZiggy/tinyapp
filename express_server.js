@@ -41,7 +41,7 @@ const urlDatabase = {
 
 
 app.get('/', (request, response) => {
-  response.send('hello');
+  response.redirect('/login');
 });
 
 app.listen(PORT, () => {
@@ -57,22 +57,33 @@ app.get('/hello', (req, res) => {
 });
 
 app.get('/urls', (req, res) => {
+  const id = req.cookies['user_id']
+  const user = users[id]
+  console.log('first ID:', id)
+  console.log('users object: ', users)
+  console.log('users[ID :', users[id])
   const templateVars = {
     urls: urlDatabase,
-    username: req.cookies['username']
+    user: users[req.cookies["user_id"]]
   };
   res.render('urls_index', templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
+  const templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL],
+    user: users[req.cookies["user_id"]]
+  }  
+  res.render("urls_new", templateVars);
+
+  });
 
 app.get('/urls/:shortURL', (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies['username']
+    user: users[req.cookies["user_id"]]
   };
   res.render("urls_show", templateVars);
 })
@@ -119,36 +130,64 @@ app.post('/urls/:shortURL', (req, res) => {
 
 app.get('/login', (req, res) => {
   const templateVars = {
-    username: req.cookies['username'],
-    urls: urlDatabase
+    user: users[req.cookies["user_id"]],
   }
-  res.render('urls_index', templateVars)
+  res.render('login', templateVars)
 })
 
 app.post('/login', (req, res) => {
-  console.log(req.body)
-  res.cookie("username", req.body.username)
-  res.redirect('/urls')
+
+  let email = req.body.email;
+  let password = req.body.password;
+    if (!email || !password) {
+    return res.status(400).send('Both fields cannot be empty')
+    }
+  for (const user in users) {
+    if (users[user].email === email && users[user].password === password){
+      res.cookie("user_id", users[user].id)
+      return res.redirect('/urls')
+    } 
+  }
+
+  res.send('incorrect email or password')
+ // res.cookie("user_id", users[id].id)
+  
 })
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username")
+  res.clearCookie("user_id",)
   res.redirect('/urls')
 })
 
 app.get("/register", (req, res) => {
-  res.render("registrationPage");
+  const templateVars = {
+    user: null
+  }
+  res.render("registrationPage", templateVars);
 });
 
 app.post('/register', (req, res) => {
-  const id = generateRandomString(8);
   const email = req.body.email
   const password = req.body.password
-  users[id] = {id, email, password}
-  res.cookie("user_id", users[id].id)
-  res.redirect('/urls')
+  if (!email || !password) {
+    return res.status(400).send('Both fields cannot be empty')
+  }
+  for (const user in users) {
+    if (users[user].email === email) {
+      return res.send("email already exists")
+    }
+  }
+  const id = generateRandomString(8);
+  users[id] = { id, email, password }
+  res.cookie("user_id", id)
   console.log(users);
+  res.redirect('/urls')
+
 })
+
+// app.get('/login', (req, res) => {
+//   res.render('login')
+// })
 
 
 
