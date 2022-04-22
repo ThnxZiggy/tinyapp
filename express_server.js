@@ -13,8 +13,8 @@ app.use(
     keys: ["hello this is my key, pls work"]
   }));
 const bcrypt = require('bcryptjs');
-const { getUserByEmail, generateRandomString, userURLs } = require('./helpers.js')
-app.set('view engine', 'ejs')
+const { getUserByEmail, generateRandomString, userURLs } = require('./helpers.js');
+app.set('view engine', 'ejs');
 
 
 
@@ -32,7 +32,7 @@ const users = {
     password: "dishwasher-funk",
     hashedPassword: bcrypt.hashSync("dishwasher-funk", 10)
   }
-}
+};
 
 
 
@@ -67,13 +67,13 @@ app.get('/hello', (req, res) => {
 
 
 app.get('/urls', (req, res) => {
-  const id = req.session['userID']
+  const id = req.session['userID'];
 
   if (!id) {
-    return res.redirect('/login')
+    return res.redirect('/login');
   }
 
-  const user = users[id]
+  const user = users[id];
   const templateVars = {
     urls: userURLs(id, urlDatabase),
     user: user
@@ -84,30 +84,30 @@ app.get('/urls', (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const id = req.session['userID']
+  const id = req.session['userID'];
 
   if (!id) {
-    res.redirect('/login')
+    res.redirect('/login');
   }
 
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: userURLs(id, urlDatabase),
     user: users[id]
-  }
+  };
 
   res.render('urls_new', templateVars);
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const id = req.session['userID']
+  const id = req.session['userID'];
 
   if (!id) {
-    return res.redirect('/login')
-  } 
-  
+    return res.redirect('/login');
+  }
+
   if (!urlDatabase[req.params.shortURL]) {
-    return res.status(404).send("Short URL does not exist")
+    return res.status(404).send("Short URL does not exist");
   }
   const templateVars = {
     shortURL: req.params.shortURL,
@@ -115,116 +115,114 @@ app.get('/urls/:shortURL', (req, res) => {
     user: users[req.session["userID"]]
   };
   res.render("urls_show", templateVars);
-})
+});
 
 
 app.post("/urls", (req, res) => {
-  const id = req.session['userID']
+  const id = req.session['userID'];
   if (!id) {
     return res.redirect('/login');
   }
-  const user = users[id]
+  const user = users[id];
 
   if (!user) {
-    return res.status(403).json({ error: "Please login to access this endpoint" })
+    return res.status(403).json({ error: "Please login to access this endpoint" });
 
   }
   //get the long URL from request
-  const longURL = req.body.longURL
+  const longURL = req.body.longURL;
   //generate short URL
   const shortURL = generateRandomString(6);
   //set shortURLlongURL pair into database
-  urlDatabase[shortURL] = { longURL, userID: id }
+  urlDatabase[shortURL] = { longURL, userID: id };
   res.redirect(`/urls/${shortURL}`);
 
-})
+});
 
 app.get('/u/:shortURL', (req, res) => {
-  const { longURL } = urlDatabase[req.params.shortURL] || {}
+  const { longURL } = urlDatabase[req.params.shortURL] || {};
   if (!longURL) {
-    return res.status(404).send(`<html><body>This short URL does not exist</body></html>`)
+    return res.status(404).send(`<html><body>This short URL does not exist</body></html>`);
   }
   res.redirect(longURL);
 });
 
 app.post('/urls/:shortURL/delete', (req, res) => {
-  const deleteURL = req.params.shortURL
+  const deleteURL = req.params.shortURL;
   if (!urlDatabase[deleteURL]) {
-    return res.status(404).send(`<html><URL doesn't exist</body></html>`)
+    return res.status(404).send(`<html><URL doesn't exist</body></html>`);
+  } else if (urlDatabase[deleteURL].userID !== req.session["userID"]) {
+    return res.status(404).send(`<html><Permission Denied</body></html>`);
   }
 
-  else if (urlDatabase[deleteURL].userID !== req.session["userID"]) {
-    return res.status(404).send(`<html><Permission Denied</body></html>`)
-  }
-  
-  delete urlDatabase[deleteURL]
-  res.redirect("/urls")
-  
-})
+  delete urlDatabase[deleteURL];
+  res.redirect("/urls");
+
+});
 
 
 app.post('/urls/:shortURL', (req, res) => {
-  const editshortURLID = req.params.shortURL
-  res.redirect("/urls")
-})
+  const editshortURLID = req.params.shortURL;
+  res.redirect("/urls");
+});
 
 app.get('/login', (req, res) => {
   const templateVars = {
     user: users[req.session.userID],
-  }
-  res.render('login', templateVars)
-})
+  };
+  res.render('login', templateVars);
+});
 
 app.post('/login', (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
 
   if (!email || !password) {
-    return res.status(400).send('Both fields cannot be empty')
+    return res.status(400).send('Both fields cannot be empty');
   }
   for (const user in users) {
-    let passwordCompare = bcrypt.compareSync(password, users[user].hashedPassword)
+    let passwordCompare = bcrypt.compareSync(password, users[user].hashedPassword);
     if (users[user].email === email && passwordCompare) {
-      req.session.userID = users[user].id
-      console.log("user ID key ", req.session.userID)
-      return res.redirect('/urls')
+      req.session.userID = users[user].id;
+      console.log("user ID key ", req.session.userID);
+      return res.redirect('/urls');
     }
   }
 
-  res.status(403).send('incorrect email or password')
+  res.status(403).send('incorrect email or password');
 
-})
+});
 
 app.post("/logout", (req, res) => {
-  req.session = null
-  res.redirect('/login')
-})
+  req.session = null;
+  res.redirect('/login');
+});
 
 app.get("/register", (req, res) => {
   const templateVars = {
     user: null
-  }
+  };
   res.render("registrationPage", templateVars);
 });
 
 app.post('/register', (req, res) => {
-  const email = req.body.email
-  const password = req.body.password
+  const email = req.body.email;
+  const password = req.body.password;
   const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email || !password) {
-    return res.status(400).send('Both fields cannot be empty')
+    return res.status(400).send('Both fields cannot be empty');
   }
   for (const user in users) {
     if (users[user].email === email) {
-      return res.send("email already exists")
+      return res.send("email already exists");
     }
   }
   const id = generateRandomString(8);
-  users[id] = { id, email, hashedPassword }
-  req.session.userID = id
-  console.log("user ID key ", req.session.userID)
+  users[id] = { id, email, hashedPassword };
+  req.session.userID = id;
+  console.log("user ID key ", req.session.userID);
   console.log(users);
-  res.redirect('/urls')
+  res.redirect('/urls');
 
-})
+});
 
