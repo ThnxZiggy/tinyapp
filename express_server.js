@@ -13,29 +13,11 @@ app.use(
     keys: ["hello this is my key, pls work"]
   }));
 const bcrypt = require('bcryptjs');
+const { getUserByEmail, generateRandomString, userURLs } = require('./helpers.js')
+app.set('view engine', 'ejs')
 
 
-const generateRandomString = function (n) {
-  let randomString = '';
-  let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
-  for (let i = 0; i < n; i++) {
-    randomString += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return randomString;
-};
-
-const userObject = function (userID2, urlDatabase) {
-  let result = {};
-  for (const url in urlDatabase) {
-    console.log(urlDatabase[url].userID)
-    if (userID2 === urlDatabase[url].userID) {
-      console.log("success")
-      result[url] = urlDatabase[url]
-    }
-  }
-  return result;
-};
 
 const users = {
   "userRandomID": {
@@ -53,7 +35,7 @@ const users = {
 }
 
 
-app.set('view engine', 'ejs')
+
 
 const urlDatabase = {
   'b2xBn2': {
@@ -85,7 +67,7 @@ app.get('/hello', (req, res) => {
 
 
 app.get('/urls', (req, res) => {
-  const id = req.cookies['user_id']
+  const id = req.session['userID']
 
   if (!id) {
     return res.redirect('/login')
@@ -93,7 +75,7 @@ app.get('/urls', (req, res) => {
 
   const user = users[id]
   const templateVars = {
-    urls: userObject(id, urlDatabase),
+    urls: userURLs(id, urlDatabase),
     user: user
   };
 
@@ -102,7 +84,7 @@ app.get('/urls', (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  const id = req.cookies['user_id']
+  const id = req.session['userID']
 
   if (!id) {
     res.redirect('/login')
@@ -110,7 +92,7 @@ app.get("/urls/new", (req, res) => {
 
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: userObject(id, urlDatabase),
+    longURL: userURLs(id, urlDatabase),
     user: users[id]
   }
 
@@ -118,7 +100,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get('/urls/:shortURL', (req, res) => {
-  const id = req.cookies['user_id']
+  const id = req.session['userID']
 
   if (!id) {
     return res.redirect('/login')
@@ -130,14 +112,14 @@ app.get('/urls/:shortURL', (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.cookies["user_id"]]
+    user: users[req.session["userID"]]
   };
   res.render("urls_show", templateVars);
 })
 
 
 app.post("/urls", (req, res) => {
-  const id = req.cookies['user_id']
+  const id = req.session['userID']
   if (!id) {
     return res.redirect('/login');
   }
@@ -171,7 +153,7 @@ app.post('/urls/:shortURL/delete', (req, res) => {
     return res.status(404).send(`<html><URL doesn't exist</body></html>`)
   }
 
-  else if (urlDatabase[deleteURL].userID !== req.cookies["user_id"]) {
+  else if (urlDatabase[deleteURL].userID !== req.session["userID"]) {
     return res.status(404).send(`<html><Permission Denied</body></html>`)
   }
   
@@ -180,16 +162,6 @@ app.post('/urls/:shortURL/delete', (req, res) => {
   
 })
 
-// app.get("/urls/:shortURL", (req, res) => {
-//   const shortURLID = req.params.shortURL
-//   const id = req.cookies['user_id']
-
-//   if (!id) {
-//     return res.redirect('/login')
-//     } 
-
-//   res.redirect(`/urls/${shortURLID}`)
-// })
 
 app.post('/urls/:shortURL', (req, res) => {
   const editshortURLID = req.params.shortURL
@@ -198,7 +170,7 @@ app.post('/urls/:shortURL', (req, res) => {
 
 app.get('/login', (req, res) => {
   const templateVars = {
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.userID],
   }
   res.render('login', templateVars)
 })
@@ -213,18 +185,18 @@ app.post('/login', (req, res) => {
   for (const user in users) {
     let passwordCompare = bcrypt.compareSync(password, users[user].hashedPassword)
     if (users[user].email === email && passwordCompare) {
-      res.cookie("user_id", users[user].id)
+      req.session.userID = users[user].id
+      console.log("user ID key ", req.session.userID)
       return res.redirect('/urls')
     }
   }
 
   res.status(403).send('incorrect email or password')
-  // res.cookie("user_id", users[id].id)
 
 })
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id",)
+  req.session = null
   res.redirect('/login')
 })
 
@@ -249,39 +221,10 @@ app.post('/register', (req, res) => {
   }
   const id = generateRandomString(8);
   users[id] = { id, email, hashedPassword }
-  res.cookie("user_id", id)
+  req.session.userID = id
+  console.log("user ID key ", req.session.userID)
   console.log(users);
   res.redirect('/urls')
 
 })
 
-// app.get('/login', (req, res) => {
-//   res.render('login')
-// })
-
-
-
-
-
-
-// app.get('/login', (req, res) => {
-//   res.render('login')
-// })
-
-// app.post('/login', (req, res) => {
-// //loop through user object
-// //if givenEmail == the curernt user i'm looping through then i found the right user
-// for (let userKey in users) {
-//   console.log(userKey)
-//   console.log(user[userkey])
-// //if found, i will "authenticate them"
-// //use for in for object
-//  if(users[userkey].email === givenEmail) {
-//    //i found the right user
-//    console.log('you are authenticated')
-//    res.send('you are authenticated')
-//    //return res.send to avoid errors
-//  }
-// }
-//   res.redirect("/urls");
-// })
