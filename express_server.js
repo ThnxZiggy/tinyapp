@@ -45,8 +45,16 @@ const urlDatabase = {
     userID: 'userRandomID'
   }
 };
+const dummyObject = {
+  1: {
+    this: "that",
+    there: "then"
+  }
+}
 
-
+let newObject = "the";
+let newProp = "hello"
+dummyObject[1] = newProp;
 
 //redirect to login page
 app.get('/', (request, response) => {
@@ -93,7 +101,7 @@ app.post("/urls", (req, res) => {
   //generate short URL
   const shortURL = generateRandomString(6);
   //set shortURLlongURL pair into database
-  urlDatabase[shortURL] = { longURL, ID: id };
+  urlDatabase[shortURL] = { longURL, userID: id };
   res.redirect(`/urls/${shortURL}`);
 
 });
@@ -135,8 +143,16 @@ app.get('/urls/:shortURL', (req, res) => {
 });
 
 app.post('/urls/:shortURL', (req, res) => {
+  
   const editshortURLID = req.params.shortURL;
+    const id = req.session['userID'];
+ 
+  const newlongURL = req.body.longURL;
+   urlDatabase[editshortURLID] = { 
+    longURL: newlongURL,
+    userID: id }
   res.redirect("/urls");
+ 
 });
 
 
@@ -152,15 +168,21 @@ app.get('/u/:shortURL', (req, res) => {
 //delete a shortURL from your URL index
 app.post('/urls/:shortURL/delete', (req, res) => {
   const deleteURL = req.params.shortURL;
+
   if (!urlDatabase[deleteURL]) {
     return res.status(404).send(`<html><URL doesn't exist</body></html>`);
-  } else if (urlDatabase[deleteURL].userID !== req.session["userID"]) {
-    return res.status(404).send(`<html><Permission Denied</body></html>`);
-  }
+  } 
 
-  delete urlDatabase[deleteURL];
-  res.redirect("/urls");
+    if (!req.session.userID) {
+      return res.status(403).send(`<html><Permission Denied</body></html>`);
+    };
+    
 
+    if (urlDatabase[deleteURL] && urlDatabase[deleteURL].userID === req.session.userID) {
+      delete urlDatabase[deleteURL];
+      return res.redirect("/urls");
+    }
+  return res.status(404).send(`<html><This URL does not belog to you</body></html>`);
 });
 
 

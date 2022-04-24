@@ -22,7 +22,7 @@ const generateRandomString = function(n) {
 const userURLs = function(ID, urlDatabase) {
   let result = {};
   for (const url in urlDatabase) {
-    if (ID === urlDatabase[url].ID) {
+    if (ID === urlDatabase[url].userID) {
       result[url] = urlDatabase[url];
     }
   }
