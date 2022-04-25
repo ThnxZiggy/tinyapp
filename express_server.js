@@ -45,16 +45,6 @@ const urlDatabase = {
     userID: 'userRandomID'
   }
 };
-const dummyObject = {
-  1: {
-    this: "that",
-    there: "then"
-  }
-}
-
-let newObject = "the";
-let newProp = "hello"
-dummyObject[1] = newProp;
 
 //redirect to login page
 app.get('/', (request, response) => {
@@ -126,7 +116,7 @@ app.get("/urls/new", (req, res) => {
 
 app.get('/urls/:shortURL', (req, res) => {
   const id = req.session['userID'];
-
+  const editshortURLID = req.params.shortURL;
   if (!id) {
     return res.redirect('/login');
   }
@@ -134,24 +124,29 @@ app.get('/urls/:shortURL', (req, res) => {
   if (!urlDatabase[req.params.shortURL]) {
     return res.status(404).send("Short URL does not exist");
   }
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.session["userID"]]
-  };
-  res.render("urls_show", templateVars);
+
+  if (urlDatabase[editshortURLID] && urlDatabase[editshortURLID].userID === req.session.userID) {
+    const templateVars = {
+      shortURL: req.params.shortURL,
+      longURL: urlDatabase[req.params.shortURL].longURL,
+      user: users[req.session["userID"]]
+    };
+    return res.render("urls_show", templateVars);
+  }
+  
+  return res.status(403).send(`<html><Access not allowed.</body></html>`);
+
 });
 
 app.post('/urls/:shortURL', (req, res) => {
-  
   const editshortURLID = req.params.shortURL;
-    const id = req.session['userID'];
+  const id = req.session['userID'];
  
   const newlongURL = req.body.longURL;
-   urlDatabase[editshortURLID] = { 
+  urlDatabase[editshortURLID] = {
     longURL: newlongURL,
-    userID: id }
-  res.redirect("/urls");
+    userID: id };
+  return res.redirect("/urls");
  
 });
 
@@ -171,18 +166,18 @@ app.post('/urls/:shortURL/delete', (req, res) => {
 
   if (!urlDatabase[deleteURL]) {
     return res.status(404).send(`<html><URL doesn't exist</body></html>`);
-  } 
+  }
 
-    if (!req.session.userID) {
-      return res.status(403).send(`<html><Permission Denied</body></html>`);
-    };
+  if (!req.session.userID) {
+    return res.status(403).send(`<html><Permission Denied</body></html>`);
+  }
     
 
-    if (urlDatabase[deleteURL] && urlDatabase[deleteURL].userID === req.session.userID) {
-      delete urlDatabase[deleteURL];
-      return res.redirect("/urls");
-    }
-  return res.status(404).send(`<html><This URL does not belog to you</body></html>`);
+  if (urlDatabase[deleteURL] && urlDatabase[deleteURL].userID === req.session.userID) {
+    delete urlDatabase[deleteURL];
+    return res.redirect("/urls");
+  }
+  return res.status(404).send(`<html><This URL does not belong to you</body></html>`);
 });
 
 
@@ -202,7 +197,7 @@ app.post('/register', (req, res) => {
     return res.status(400).send('Both fields cannot be empty');
   }
   if (getUserByEmail(email, users)) {
-    return res.send("email already exists")
+    return res.send("email already exists");
   }
 
   const id = generateRandomString(8);
@@ -225,15 +220,15 @@ app.get('/login', (req, res) => {
 app.post('/login', (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
-  let user = getUserByEmail(email, users)
+  let user = getUserByEmail(email, users);
 
   if (!email || !password) {
     return res.status(400).send('Both fields cannot be empty');
   }
   if (user) {
-  console.log(user);    
+    console.log(user);
     let passwordCompare = bcrypt.compareSync(password, users[user].hashedPassword);
-    if ( passwordCompare) {
+    if (passwordCompare) {
       req.session['userID'] = users[user].id;
       return res.redirect('/urls');
     }
